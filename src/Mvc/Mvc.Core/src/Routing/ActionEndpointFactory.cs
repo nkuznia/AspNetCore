@@ -33,6 +33,7 @@ namespace Microsoft.AspNetCore.Mvc.Routing
 
         public void AddEndpoints(
             List<Endpoint> endpoints,
+            HashSet<string> routeNames,
             ActionDescriptor action,
             IReadOnlyList<ConventionalRouteEntry> routes,
             IReadOnlyList<Action<EndpointBuilder>> conventions)
@@ -40,6 +41,11 @@ namespace Microsoft.AspNetCore.Mvc.Routing
             if (endpoints == null)
             {
                 throw new ArgumentNullException(nameof(endpoints));
+            }
+
+            if (routeNames == null)
+            {
+                throw new ArgumentNullException(nameof(routeNames));
             }
 
             if (action == null)
@@ -76,6 +82,7 @@ namespace Microsoft.AspNetCore.Mvc.Routing
                     // We suppress link generation for each conventionally routed endpoint. We generate a single endpoint per-route
                     // to handle link generation.
                     var builder = CreateEndpoint(
+                        routeNames,
                         action,
                         updatedRoutePattern,
                         route.RouteName,
@@ -102,6 +109,7 @@ namespace Microsoft.AspNetCore.Mvc.Routing
                 }
 
                 var endpoint = CreateEndpoint(
+                    routeNames,
                     action,
                     updatedRoutePattern,
                     action.AttributeRouteInfo.Name,
@@ -114,7 +122,12 @@ namespace Microsoft.AspNetCore.Mvc.Routing
             }
         }
 
-        public void AddConventionalLinkGenerationRoute(List<Endpoint> endpoints, HashSet<string> keys, ConventionalRouteEntry route, IReadOnlyList<Action<EndpointBuilder>> conventions)
+        public void AddConventionalLinkGenerationRoute(
+            List<Endpoint> endpoints,
+            HashSet<string> routeNames,
+            HashSet<string> keys,
+            ConventionalRouteEntry route,
+            IReadOnlyList<Action<EndpointBuilder>> conventions)
         {
             if (endpoints == null)
             {
@@ -170,6 +183,14 @@ namespace Microsoft.AspNetCore.Mvc.Routing
             if (route.RouteName != null)
             {
                 builder.Metadata.Add(new RouteNameMetadata(route.RouteName));
+            }
+
+            // MVC guarantees that when two of it's endpoints have the same route name they are equivalent.
+            //
+            // However, Endpoint Routing requires Endpoint Names to be unique.
+            if (route.RouteName != null && routeNames.Add(route.RouteName))
+            {
+                builder.Metadata.Add(new EndpointNameMetadata(route.RouteName));
             }
 
             for (var i = 0; i < conventions.Count; i++)
@@ -233,6 +254,7 @@ namespace Microsoft.AspNetCore.Mvc.Routing
         }
 
         private RouteEndpoint CreateEndpoint(
+            HashSet<string> routeNames,
             ActionDescriptor action,
             RoutePattern routePattern,
             string routeName,
@@ -281,6 +303,14 @@ namespace Microsoft.AspNetCore.Mvc.Routing
             }
 
             builder.Metadata.Add(action);
+
+            // MVC guarantees that when two of it's endpoints have the same route name they are equivalent.
+            //
+            // However, Endpoint Routing requires Endpoint Names to be unique.
+            if (routeName != null && !suppressLinkGeneration && routeNames.Add(routeName))
+            {
+                builder.Metadata.Add(new EndpointNameMetadata(routeName));
+            }
 
             if (dataTokens != null)
             {

@@ -264,7 +264,7 @@ elseif((-not $BuildNative) -and (-not $BuildManaged) -and (-not $BuildNodeJS) -a
     # Now that we support subfolder invokations of build.cmd, we will be pushing to have build.cmd build everything (-all) by default
 
     $BuildManaged = $true
-    $BuildNative = $true
+    $BuildNative = $false
 }
 
 if ($BuildInstallers) { $MSBuildArguments += "/p:BuildInstallers=true" }

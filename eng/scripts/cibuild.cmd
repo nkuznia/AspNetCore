@@ -1,3 +1,3 @@
 @ECHO OFF
 SET RepoRoot=%~dp0..\..
-%RepoRoot%\build.cmd -ci -all -pack -sign %*
+%RepoRoot%\build.cmd -ci -pack -sign %*
